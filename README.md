@@ -14,6 +14,7 @@ The image expects the contents to be avaliable at a specific location which is e
 - No external CI/CD pipeline should be used
 - You can deploy anything else inside the cluster as required.
 
-There can be multiple solutions to this problem. One such solution has been implemented in k8s folder
+There can be multiple solutions to this problem. One such solution has been implemented in k8s folder.
+Once deployed, you can browse on port: 31370.
 
 Enjoy !!
