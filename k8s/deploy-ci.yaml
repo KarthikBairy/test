@@ -1,0 +1,115 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: git-pv
+  labels:
+    type: local
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/data"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: git-pvc
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: website
+  name: website
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: website
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: website
+    spec:
+      containers:
+      - image: python
+        name: python
+        workingDir: "/etc/website/data"
+        command: ["python","-m","http.server","80"]
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - mountPath: "/etc/website"
+          name: site    
+        resources: {}
+      volumes:
+      - name: site
+        persistentVolumeClaim:
+          claimName: git-pvc
+---
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: cloner
+spec:
+  schedule: "*/1 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          initContainers:
+          - name: cloner
+            image: alpine/git
+            command: ["git", "clone", "https://github.com/nagarkarv/test.git", "/etc/data"]
+            volumeMounts:
+            - mountPath: "/etc/data"
+              name: data
+          containers:
+          - name: copy
+            image: busybox
+            imagePullPolicy: IfNotPresent
+            args:
+            - /bin/sh
+            - -c
+            - cp -R /etc/data /etc/website
+            volumeMounts:
+            - mountPath: "/etc/data"
+              name: data            
+            - mountPath: "/etc/website"
+              name: site
+          restartPolicy: OnFailure 
+          volumes:
+          - name: data
+            emptyDir: {}
+          - name: site
+            persistentVolumeClaim:
+              claimName: git-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: website
+  name: website
+spec:
+  ports:
+  - port: 8080
+    protocol: TCP
+    targetPort: 80
+    nodePort: 31370
+  type: NodePort
+  selector:
+    app: website
+status:
+  loadBalancer: {}
