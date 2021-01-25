@@ -71,7 +71,7 @@ spec:
           initContainers:
           - name: cloner
             image: alpine/git
-            command: ["git", "clone", "https://github.com/nagarkarv/test.git", "/etc/data"]
+            command: ["git", "clone", "https://github.com/KarthikBairy/test.git", "/etc/data"]
             volumeMounts:
             - mountPath: "/etc/data"
               name: data
@@ -108,7 +108,7 @@ spec:
     protocol: TCP
     targetPort: 80
     nodePort: 31370
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: website
 status:
